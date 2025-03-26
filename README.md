@@ -17,6 +17,6 @@ El primer hito en el desarrollo de aplicaciones móviles es completar el primer 
 
 | Nombre       | Rol | Contacto                                     |
 |--------------|---|----------------------------------------------|
-| Jan Castells | UX/UI Designer  | [@Juanics22](https://github.com/Janics22)    |
+| Jan Castells | UX/UI Designer  | [@Janics22](https://github.com/Janics22)    |
 | Xiaolong Ji  | UX/UI Designer | [@xji650](https://github.com/xji650)         |
 
