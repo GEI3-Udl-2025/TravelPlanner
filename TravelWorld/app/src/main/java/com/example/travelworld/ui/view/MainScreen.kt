@@ -1,6 +1,8 @@
 package com.example.travelworld.ui.view
 
 import HomeApp
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -13,12 +15,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.travelworld.ui.view.trip_icon.TripApp
+import com.example.travelworld.ui.view.userpref_icon.UserPreferencesApp
 
 // Enum para representar las pantallas principales
 enum class TravelMode {
     HOME, TRIP, ITINERARY, USER_PREFERENCE
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TravelApp(navController: NavController) {
@@ -143,6 +148,7 @@ fun HomeScreen() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun TripScreen() {
     Column(
@@ -186,6 +192,7 @@ fun UserPreferenceScreen() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview
 @Composable
 fun MainAppPreview() {
