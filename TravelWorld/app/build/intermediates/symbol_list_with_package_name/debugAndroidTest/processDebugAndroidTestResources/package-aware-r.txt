@@ -1,4 +1,4 @@
-com.example.travelplanner.test
+com.example.travelworld.test
 attr alpha
 attr font
 attr fontProviderAuthority

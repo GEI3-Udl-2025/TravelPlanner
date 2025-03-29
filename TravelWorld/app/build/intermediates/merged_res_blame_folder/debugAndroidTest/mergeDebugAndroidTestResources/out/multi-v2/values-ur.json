@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.travelplanner.test.app-mergeDebugAndroidTestResources-35:/values-ur/values-ur.xml",
+            "outputFile": "com.example.travelworld.test.app-mergeDebugAndroidTestResources-35:/values-ur/values-ur.xml",
             "map": [
                 {
                     "source": "C:\\Users\\LittleDragon\\.gradle\\caches\\8.10.2\\transforms\\0358543dd2c650b3b73643c23e4685d2\\transformed\\ui-release\\res\\values-ur\\values-ur.xml",
