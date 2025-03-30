@@ -1,99 +1,64 @@
 package com.example.travelworld.ui.viewmodel
 
-// viewmodels/TripViewModel.kt
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.travelworld.domain.model.Trip
+import com.example.travelworld.domain.repository.TripRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
-class TripViewModel : ViewModel() {
-    var trips by mutableStateOf(listOf<Trip>())
+@HiltViewModel
+class TripViewModel @Inject constructor(
+    private val repository: TripRepository
+) : ViewModel() {
 
-    // Trip fields
-    var destination by mutableStateOf("")
-        private set
-    var startDate by mutableStateOf("")
-        private set
-    var endDate by mutableStateOf("")
-        private set
-    var tripNotes by mutableStateOf("")
-        private set
+    // Estado mutable para mantener el listado de tareas
+    private val _trips = mutableStateListOf<Trip>()
+    val trips: List<Trip> get() = _trips
 
-    // Dialog state
-    var showAddTripDialog by mutableStateOf(false)
-        private set
-
-    fun showAddTripDialog() {
-        showAddTripDialog = true
+    init {
+        loadTripsOld()
     }
 
-    fun dismissAddTripDialog() {
-        showAddTripDialog = false
-        clearTripFields()
-    }
-
-    private fun clearTripFields() {
-        destination = ""
-        startDate = ""
-        endDate = ""
-        tripNotes = ""
-    }
-
-    fun updateDestination(value: String) { destination = value }
-    fun updateStartDate(value: String) { startDate = value }
-    fun updateEndDate(value: String) { endDate = value }
-    fun updateTripNotes(value: String) { tripNotes = value }
-
-    fun addTrip() {
-        if (destination.isNotBlank()) {
-            val newTrip = Trip(
-                id = (trips.maxOfOrNull { it.id } ?: 0) + 1,
-                destination = destination,
-                startDate = startDate,
-                endDate = endDate,
-                notes = tripNotes
-            )
-            trips = trips + newTrip
-            dismissAddTripDialog()
+    private fun loadTripsOld() {
+        _trips.clear()
+        viewModelScope.launch(Dispatchers.IO) {
+            _trips.addAll(repository.getTrips())
         }
     }
 
-    fun deleteTrip(trip: Trip) {
-        trips = trips - trip
-    }
-
-    fun toggleTripExpansion(tripId: Int) {
-        trips = trips.map {
-            if (it.id == tripId) it.copy(isExpanded = !it.isExpanded)
-            else it
+    private fun loadTrips() {
+        viewModelScope.launch {
+            // Fetch the trips on IO thread
+            val tripsFromDb = withContext(Dispatchers.IO) { repository.getTrips() }
+            // Update state on main thread
+            _trips.clear()
+            _trips.addAll(tripsFromDb)
         }
     }
 
-    fun startEditingTrip(tripId: Int) {
-        trips = trips.map {
-            if (it.id == tripId) it.copy(isEditing = true)
-            else it.copy(isEditing = false)
+    fun addTrip(trip: Trip) {
+        viewModelScope.launch {
+            repository.addTrip(trip)
+            loadTrips()
         }
     }
 
-    fun updateTrip(
-        tripId: Int,
-        newDestination: String,
-        newStartDate: String,
-        newEndDate: String,
-        newNotes: String
-    ) {
-        trips = trips.map { trip ->
-            if (trip.id == tripId) {
-                trip.copy(
-                    destination = newDestination,
-                    startDate = newStartDate,
-                    endDate = newEndDate,
-                    notes = newNotes,
-                    isEditing = false
-                )
-            } else trip
+    fun deleteTrip(tripId: Int) {
+        viewModelScope.launch {
+            repository.deleteTrip(tripId)
+            loadTrips()
+        }
+    }
+
+    fun updateTrip(trip: Trip) {
+        viewModelScope.launch {
+            repository.updateTrip(trip)
+            loadTrips()
         }
     }
 }

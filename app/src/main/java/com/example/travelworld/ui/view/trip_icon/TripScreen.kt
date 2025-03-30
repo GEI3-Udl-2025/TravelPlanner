@@ -1,273 +1,183 @@
 package com.example.travelworld.ui.view.trip_icon
 
-import android.os.Build
-import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowDropUp
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import com.example.travelworld.R
 import com.example.travelworld.domain.model.Trip
 import com.example.travelworld.ui.viewmodel.TripViewModel
-import com.example.travelworld.ui.viewmodel.SubTripViewModel
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun TripApp(
-    tripViewModel: TripViewModel = viewModel(),
-    subTripViewModel: SubTripViewModel = viewModel()
+    navController: NavController,
+    viewModel: TripViewModel = hiltViewModel()
 ) {
+    val trips = viewModel.trips
+    var showTripDialog by remember { mutableStateOf(false) }
+    var isEditingTrip by remember { mutableStateOf(false) }
+    var currentTripId by remember { mutableStateOf(0) }
+    var tripTitle by remember { mutableStateOf("") }
+    var tripDescription by remember { mutableStateOf("") }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Top
+            .padding(16.dp)
     ) {
-        Button(
-            onClick = { tripViewModel.showAddTripDialog() },
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        ) {
-            Text("Add New Trip")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(tripViewModel.trips) { trip ->
-                TripCard(
+        // Lista de tareas
+        LazyColumn(modifier = Modifier.weight(1f)) {
+            items(trips) { trip ->
+                TripItem(
                     trip = trip,
-                    onEditClick = { tripViewModel.startEditingTrip(trip.id) },
-                    onDeleteClick = { tripViewModel.deleteTrip(trip) },
-                    onExpandClick = { tripViewModel.toggleTripExpansion(trip.id) },
-                    onAddSubTripClick = { subTripViewModel.showAddSubTripDialog(trip.id) },
-                    onTripEditComplete = { dest, start, end, notes ->
-                        tripViewModel.updateTrip(trip.id, dest, start, end, notes)
+                    onEdit = {
+                        // Abre el modal en modo edición
+                        isEditingTrip = true
+                        currentTripId = trip.id
+                        tripTitle = trip.title
+                        tripDescription = trip.description
+                        showTripDialog = true
+                    },
+                    onOpen = {
+                        // Navega al listado de subtareas
+                        navController.navigate("subtrips/${trip.id}")
                     }
                 )
             }
         }
 
-        if (subTripViewModel.showAddSubTripDialog != -1) {
-            AddSubTripDialog(
-                tripViewModel = tripViewModel,
-                subTripViewModel = subTripViewModel
-            )
+        // Botón para añadir una tarea de ejemplo (abre modal en modo creación)
+        Button(
+            onClick = {
+                isEditingTrip = false
+                tripTitle = ""
+                tripDescription = ""
+                showTripDialog = true
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Añadir Tarea")
         }
-
     }
-}
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TripCard(
-    trip: Trip,
-    onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit,
-    onExpandClick: () -> Unit,
-    onAddSubTripClick: () -> Unit,
-    onTripEditComplete: (String, String, String, String) -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            if (trip.isEditing) {
-                TripEditor(trip = trip, onEditComplete = onTripEditComplete)
-            } else {
-                TripHeader(
-                    trip = trip,
-                    onEditClick = onEditClick,
-                    onDeleteClick = onDeleteClick,
-                    onExpandClick = onExpandClick
-                )
-
-                if (trip.isExpanded) {
-                    TripExpandedContent(
-                        trip = trip,
-                        onAddSubTripClick = onAddSubTripClick
+    // Modal para crear o editar tarea
+    if (showTripDialog) {
+        AlertDialog(
+            onDismissRequest = { showTripDialog = false },
+            title = { Text(text = if (isEditingTrip) "Editar Tarea" else "Nueva Tarea") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = tripTitle,
+                        onValueChange = { tripTitle = it },
+                        label = { Text("Título") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = tripDescription,
+                        onValueChange = { tripDescription = it },
+                        label = { Text("Descripción") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
                     )
                 }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (isEditingTrip) {
+                            viewModel.updateTrip(
+                                Trip(
+                                    id = currentTripId,
+                                    title = tripTitle,
+                                    description = tripDescription
+                                )
+                            )
+                        } else {
+                            viewModel.addTrip(
+                                Trip(
+                                    title = tripTitle,
+                                    description = tripDescription
+                                )
+                            )
+                        }
+                        showTripDialog = false
+                    }
+                ) {
+                    Text("Guardar")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showTripDialog = false }) {
+                    Text("Cancelar")
+                }
             }
-        }
+        )
     }
 }
 
 @Composable
-private fun TripHeader(
+fun TripItem(
     trip: Trip,
-    onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit,
-    onExpandClick: () -> Unit
+    onEdit: () -> Unit,
+    onOpen: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = trip.destination,
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-            )
-            Text(
-                text = "${trip.startDate} to ${trip.endDate}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-        IconButton(onClick = onExpandClick) {
+        // Muestra el título de la tarea
+        Text(
+            text = trip.title,
+            modifier = Modifier.weight(1f)
+        )
+        // Icono para editar (abre modal)
+        IconButton(onClick = onEdit) {
             Icon(
-                imageVector = if (trip.isExpanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                contentDescription = if (trip.isExpanded) "Collapse" else "Expand"
+                imageVector = Icons.Filled.Edit,
+                contentDescription = "Editar Tarea"
             )
         }
-        IconButton(onClick = onEditClick) {
-            Icon(Icons.Default.Edit, contentDescription = "Edit")
-        }
-        IconButton(onClick = onDeleteClick) {
-            Icon(Icons.Default.Delete, contentDescription = "Delete")
-        }
-    }
-}
-
-@Composable
-private fun TripExpandedContent(trip: Trip, onAddSubTripClick: () -> Unit) {
-    Column {
-        Button(
-            onClick = onAddSubTripClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Add")
-            Text("Add Activity")
-        }
-        SubTripList(trip = trip)
-    }
-}
-
-@Composable
-private fun TripEditor(trip: Trip, onEditComplete: (String, String, String, String) -> Unit) {
-    var destination by remember { mutableStateOf(trip.destination) }
-    var startDate by remember { mutableStateOf(trip.startDate) }
-    var endDate by remember { mutableStateOf(trip.endDate) }
-    var notes by remember { mutableStateOf(trip.notes) }
-
-    Column {
-        OutlinedTextField(
-            value = destination,
-            onValueChange = { destination = it },
-            label = { Text("Destination") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        // En TripEditor y AddTripDialog hay errores en el bloque Row
-        Row {
-            OutlinedTextField(
-                value = startDate,
-                onValueChange = { startDate = it },
-                label = { Text("Start Date") },
-                modifier = Modifier.weight(1f)
-            )
-
-            OutlinedTextField(
-                value = endDate,
-                onValueChange = { endDate = it },
-                label = { Text("End Date") },
-                modifier = Modifier.weight(1f)
+        // Icono para abrir el listado de subtareas
+        IconButton(onClick = onOpen) {
+            Icon(
+                imageVector = Icons.Filled.ArrowForward,
+                contentDescription = "Abrir Subtareas"
             )
         }
-        OutlinedTextField(
-            value = notes,
-            onValueChange = { notes = it },
-            label = { Text("Notes") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Button(
-            onClick = { onEditComplete(destination, startDate, endDate, notes) },
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            Text("Save Changes")
-        }
     }
-}
-
-@Composable
-private fun AddTripDialog(viewModel: TripViewModel) {
-    AlertDialog(
-        onDismissRequest = { viewModel.dismissAddTripDialog() },
-        title = { Text("Plan a New Trip") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = viewModel.destination,
-                    onValueChange = { viewModel.updateDestination(it) },
-                    label = { Text("Destination") }
-                )
-                Row {
-                    OutlinedTextField(
-                        value = viewModel.startDate,
-                        onValueChange = { viewModel.updateStartDate(it) },
-                        label = { Text("Start Date") },
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    OutlinedTextField (
-                        value = viewModel.endDate,
-                        onValueChange = { viewModel.updateEndDate(it) },
-                        label = { Text("End Date") },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                OutlinedTextField(
-                    value = viewModel.tripNotes,
-                    onValueChange = { viewModel.updateTripNotes(it) },
-                    label = { Text("Notes") }
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = { viewModel.addTrip() }) {
-                Text("Add Trip")
-            }
-        }
-    )
-}
-
-@RequiresApi(Build.VERSION_CODES.O)
-@Preview
-@Composable
-fun TripPreview() {
-    TripApp()
 }

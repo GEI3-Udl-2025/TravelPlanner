@@ -159,7 +159,8 @@ fun TripScreen() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(text = "Trip Screen", style = MaterialTheme.typography.headlineMedium)
-        TripApp()
+        //integracion del nueva pantalla trip
+        TripApp(navController = rememberNavController())
     }
 }
 
